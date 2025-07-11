@@ -15,7 +15,7 @@ export const ChatSidebar = () => {
   const navigate = useNavigate();
 
   useEffect(() => {
-    api.get("/chats").then((res) => {
+    api.get("/api/chats").then((res) => {
       setChats(res.data.chats);
     });
   }, []);

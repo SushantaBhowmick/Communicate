@@ -19,7 +19,7 @@ export const ChatHeader = () => {
 
   useEffect(() => {
     if (!chatId) return;
-    api.get(`/chats/${chatId}`).then((res) => {
+    api.get(`/api/chats/${chatId}`).then((res) => {
       const chatData = res.data.chat;
       setChat(chatData);
 
