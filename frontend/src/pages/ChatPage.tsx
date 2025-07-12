@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { useNavigate, useParams } from "react-router-dom";
+import { useParams } from "react-router-dom";
 import api from "../services/axios";
 import { useSocket } from "../hooks/useSocket";
 import { useAuth } from "../hooks/useAuth";
@@ -19,8 +19,7 @@ type Message = {
 };
 
 export const ChatPage = () => {
-  const navigate = useNavigate();
-  const { logout, user } = useAuth();
+  const { user } = useAuth();
   const { chatId } = useParams<{ chatId: string }>();
   const [messages, setMessages] = useState<Message[]>([]);
   const [newMsg, setNewMsg] = useState("");
@@ -28,10 +27,6 @@ export const ChatPage = () => {
   const socket = useSocket();
   const scrollRef = useRef<HTMLDivElement>(null);
 
-  const handleLogout = () => {
-    logout();
-    navigate("/login", { replace: true });
-  };
 
   // Join socket room & register listeners
   useEffect(() => {
@@ -43,7 +38,7 @@ export const ChatPage = () => {
       setMessages((prev) => [...prev, msg]);
     });
 
-    socket.on("typing:started", ({ userId }) => setTypingUser(userId));
+    socket.on("typing:started", ({ name }) => setTypingUser(name));
     socket.on("typing:stopped", () => setTypingUser(null));
 
     socket.on("message:updated", ({ messageId, seenBy }) => {
@@ -80,7 +75,7 @@ export const ChatPage = () => {
     if (!chatId) return;
 
     api
-      .get(`/api/messages/${chatId}?page=1&limit=20`)
+      .get(`/messages/${chatId}?page=1&limit=20`)
       .then((res) => setMessages(res.data.messages.reverse()))
       .catch((err) => {
         console.error("Failed to load messages:", err);
@@ -95,6 +90,7 @@ export const ChatPage = () => {
   const handleSend = () => {
     if (!newMsg.trim() || !chatId) return;
     socket.emit("message:send", { chatId, content: newMsg });
+    console.log(newMsg,chatId)
     setNewMsg("");
   };
 
@@ -106,7 +102,7 @@ export const ChatPage = () => {
   };
 
   const handleTyping = () => {
-    socket.emit("typing:start", { chatId });
+    socket.emit("typing:start", { chatId,name:user?.name });
     setTimeout(() => socket.emit("typing:stop", { chatId }), 1500);
   };
 

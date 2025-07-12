@@ -15,3 +15,39 @@ export const findUserByEmail = async (req: Request, res: Response) => {
 
   res.json({ user });
 };
+
+
+
+export const searchUsers= async(req:Request,res:Response)=>{
+ 
+  try {
+    const currentUserId = (req as any).user.id;
+    const {query} = req.query;
+  
+    if (!query || typeof query !== "string" || query.trim().length < 2) {
+      return res.status(400).json({ message: "Search query too short" });
+    }
+  
+    const users = await prisma.user.findMany({
+      where:{
+        id:{not:currentUserId},
+        OR:[
+          {name:{contains:query,mode:"insensitive"}},
+          {email:{contains:query,mode:"insensitive"}},
+          // {username:{contains:query,mode:"insensitive"}}, in future we can add username search
+        ],
+      },
+      select:{
+        id:true,
+        name:true,
+        email:true,
+        avatar:true,
+      },
+      take:10,
+    });
+  
+    res.json({ users });
+  } catch (error) {
+    res.status(500).json({ message: "Internal server error" });
+  }
+}

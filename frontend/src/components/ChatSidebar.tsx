@@ -3,9 +3,10 @@ import { useNavigate } from "react-router-dom";
 import api from "@/services/axios";
 import { StartChatForm } from "./SearchChatForm";
 import { useAuth } from "@/hooks/useAuth";
-import { User, LogOut, MessageCircle, Users, Settings } from "lucide-react";
+import { User, LogOut, MessageCircle, Users, Settings, Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
+import CreateGroupModal from "./createGorupModal";
 
 type Chat = {
   id: string;
@@ -17,11 +18,12 @@ type Chat = {
 
 export const ChatSidebar = () => {
   const [chats, setChats] = useState<Chat[]>([]);
+  const [isCreateGroupModalOpen, setIsCreateGroupModalOpen] = useState(false);
   const navigate = useNavigate();
   const { user, logout } = useAuth();
 
   useEffect(() => {
-    api.get("/api/chats").then((res) => {
+    api.get("/chats").then((res) => {
       setChats(res.data.chats);
     });
   }, []);
@@ -33,6 +35,14 @@ export const ChatSidebar = () => {
   const handleLogout = () => {
     logout();
     navigate("/login", { replace: true });
+  };
+
+  const handleCreateGroup = () => {
+    setIsCreateGroupModalOpen(true);
+  };
+
+  const handleCloseCreateGroupModal = () => {
+    setIsCreateGroupModalOpen(false);
   };
 
   const getInitials = (name: string) => {
@@ -52,9 +62,19 @@ export const ChatSidebar = () => {
             <MessageCircle className="h-6 w-6 text-blue-500" />
             Chats
           </h1>
-          <Button variant="ghost" size="sm" className="text-gray-600 hover:text-gray-800">
-            <Settings className="h-4 w-4" />
-          </Button>
+          <div className="flex items-center gap-2">
+            <Button 
+              variant="ghost" 
+              size="sm" 
+              className="text-gray-600 hover:text-gray-800"
+              onClick={handleCreateGroup}
+            >
+              <Plus className="h-4 w-4" />
+            </Button>
+            <Button variant="ghost" size="sm" className="text-gray-600 hover:text-gray-800">
+              <Settings className="h-4 w-4" />
+            </Button>
+          </div>
         </div>
         <StartChatForm />
       </div>
@@ -152,6 +172,12 @@ export const ChatSidebar = () => {
           Logout
         </Button>
       </div>
+
+      {/* Create Group Modal */}
+      <CreateGroupModal 
+        isOpen={isCreateGroupModalOpen}
+        onClose={handleCloseCreateGroupModal}
+      />
     </aside>
   );
 };

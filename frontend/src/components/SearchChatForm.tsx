@@ -25,8 +25,8 @@ export const StartChatForm = () => {
     setSuccess("");
 
     try {
-      const { data: userData } = await api.get(`/api/users/search?email=${email}`);
-      const { data: chatData } = await api.post("/api/chats/direct", {
+      const { data: userData } = await api.get(`/users/search?email=${email}`);
+      const { data: chatData } = await api.post("/chats/direct", {
         targetUserId: userData.user.id,
       });
       

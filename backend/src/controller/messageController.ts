@@ -12,7 +12,6 @@ export const getMessagesByChat = async (req:Request,res:Response)=>{
     const skip = (page - 1) * limit;
 
     const allowed = await isUserInChat(userId, chatId);
-    console.log(allowed);
     if (!allowed) return res.status(403).json({ message: 'Access denied' });
     try {
 

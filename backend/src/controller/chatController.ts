@@ -142,3 +142,37 @@ export const getChatById = async (req: Request, res: Response) => {
 
   res.json({ chat });
 };
+
+
+export const createGroupChat = async (req: Request, res: Response) => {
+ 
+  try {
+    const currentUserId = (req as any).user.id;
+    const { name, userIds } = req.body;
+
+
+  if (!name || !userIds || !Array.isArray(userIds) || userIds.length < 1) {
+    return res.status(400).json({ message: "Name and at least 1 user are required." });
+  }
+
+  const allUserIds = Array.from(new Set([...userIds,currentUserId]));
+
+  const chat = await prisma.chat.create({
+    data:{
+      name,
+      isGroup:true,
+      members:{
+        create:allUserIds.map((id)=>({userId:id}))
+      }
+    },
+    include:{
+      members:true,
+    }
+  })
+
+  res.status(201).json({chat})
+    
+  } catch (error) {
+      res.status(500).json({message:"Failed to create group chat",error})
+  }
+};

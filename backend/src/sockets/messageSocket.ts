@@ -5,6 +5,7 @@ import { isUserInChat } from "../services/chatService";
 
 export const registerMessageSocket = (io:Server,socket:Socket)=>{
     const userId = socket.data.userId;
+    console.log(socket.data)
 
 
       // ✅ Join a chat room
@@ -22,8 +23,8 @@ export const registerMessageSocket = (io:Server,socket:Socket)=>{
     });
 
     // ✅ Typing Start
-    socket.on('typing:start',({chatId})=>{
-        socket.to(chatId).emit('typing:started',{chatId,userId})
+    socket.on('typing:start',({chatId,name})=>{
+        socket.to(chatId).emit('typing:started',{chatId,userId,name})
     })
 
     // ✅ Typing Stop

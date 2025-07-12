@@ -5,7 +5,7 @@ import { User, MoreVertical, Phone, Video, Info, Users, ArrowLeft } from "lucide
 import { Button } from "@/components/ui/button";
 import { useNavigate } from "react-router-dom";
 
-type User = { id: string; name: string; avatarUrl?: string };
+type User = { id: string; name: string; avatar?: string ,email:string};
 type Chat = {
   id: string;
   name: string | null;
@@ -13,29 +13,30 @@ type Chat = {
   members: { user: User }[];
 };
 
+
 export const ChatHeader = () => {
   const { chatId } = useParams();
   const [chat, setChat] = useState<Chat | null>(null);
   const [otherUser, setOtherUser] = useState<User | null>(null);
   const [showMenu, setShowMenu] = useState(false);
   const navigate = useNavigate();
-  const currentUserId = localStorage.getItem("userId");
+  const currentUser= JSON.parse(localStorage.getItem("user") || "{}");
 
   useEffect(() => {
     if (!chatId) return;
-    api.get(`/api/chats/${chatId}`).then((res) => {
+    api.get(`/chats/${chatId}`).then((res) => {
       const chatData = res.data.chat;
       setChat(chatData);
 
       if (!chatData.isGroup) {
-        const other = chatData.members.find((m: { user: User }) => m.user.id !== currentUserId);
+        const other = chatData.members.find((m: { user: User }) => m.user.id !== currentUser?.id);
         setOtherUser(other?.user);
       }
     });
   }, [chatId]);
 
   const title = chat?.isGroup ? chat.name : otherUser?.name;
-  const avatar = otherUser?.avatarUrl || "/default-avatar.png";
+  const avatar = otherUser?.avatar || "/default-avatar.png";
   const isOnline = true; // 🔁 We'll hook this with presence/socket later
 
   const getInitials = (name: string) => {
