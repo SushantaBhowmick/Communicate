@@ -36,7 +36,7 @@ export const getuserChats = async (req: Request, res: Response) => {
         },
       },
     });
-    res.status(201).json({ chats });
+    res.status(200).json({ chats });
   } catch (error) {
     res.status(500).json({ message: "Failed to create chat", error });
   }
