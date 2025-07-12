@@ -12,7 +12,7 @@ export const createChat = async (req: Request, res: Response) => {
         ownerId: isGroup ? userId : null,
         members: {
           create: [
-            { userId, role: "admin" },
+            { userId, role: "ADMIN" },
             ...members.map((id: string) => ({ userId: id })),
           ],
         },
@@ -176,3 +176,35 @@ export const createGroupChat = async (req: Request, res: Response) => {
       res.status(500).json({message:"Failed to create group chat",error})
   }
 };
+
+export const getGroupcInfo=async(req:Request,res:Response)=>{
+  try {
+    const {chatId}=req.params;
+    const userId = (req as any).user.id;
+
+    const chat = await prisma.chat.findUnique({
+      where:{id:chatId},
+      include:{
+        members:{
+          include:{user:true}
+        }
+      }
+    });
+    if(!chat || !chat.isGroup) {
+      return res.status(404).json({message:"Group not found"})
+    }
+
+    const isMember = chat.members.some((m)=>m.userId===userId)
+
+    if(!isMember) {
+      return res.status(403).json({message:"Not a member"})
+    }
+
+    res.json({chat})
+
+  } catch (error) {
+    res.status(500).json({message:"Failed to get group info",error})
+  }
+}
+
+

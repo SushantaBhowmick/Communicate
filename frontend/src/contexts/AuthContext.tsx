@@ -1,11 +1,7 @@
 import { useEffect, useState } from "react";
 import { AuthContext } from "./authContext";
+import type { User } from "@/types/types";
 
-interface User {
-  id: string;
-  name: string;
-  email: string;
-}
 
 export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const [isAuthenticated, setIsAuthenticated] = useState<boolean>(false);
@@ -35,7 +31,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   };
 
   return (
-    <AuthContext.Provider value={{ isAuthenticated, user, login, logout }}>
+    <AuthContext.Provider value={{ isAuthenticated, user, login,setUser, logout }}>
       {children}
     </AuthContext.Provider>
   );

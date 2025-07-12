@@ -6,6 +6,7 @@ import { ProtectedRoute } from "./components/ProtectedRoute";
 import { ChatPage } from "./pages/ChatPage";
 import { ChatLayout } from "./layouts/ChatLayouts";
 import { WelcomePanel } from "./components/WelcomePanel";
+import { ProfilePage } from "./pages/ProfilePage";
 
 function App() {
   return (
@@ -24,6 +25,7 @@ function App() {
         >
           <Route index element={<WelcomePanel />} />
           <Route path=":chatId" element={<ChatPage />} />
+          <Route path="profile" element={<ProfilePage />} />
         </Route>
       </Routes>
     </Router>

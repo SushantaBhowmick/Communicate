@@ -18,6 +18,7 @@ export const findUserByEmail = async (req: Request, res: Response) => {
 
 
 
+
 export const searchUsers= async(req:Request,res:Response)=>{
  
   try {
@@ -47,6 +48,29 @@ export const searchUsers= async(req:Request,res:Response)=>{
     });
   
     res.json({ users });
+  } catch (error) {
+    res.status(500).json({ message: "Internal server error" });
+  }
+}
+
+
+
+export const updateProfile= async(req:Request,res:Response)=>{
+ 
+  try {
+    const userId = (req as any).user.id;
+    
+    if(!userId) return res.status(401).json({message:"Unauthorized"});
+    const {name,bio,avatar,username} = req.body;
+  
+    const updatedUser = await prisma.user.update({
+      where:{id:userId},
+      data:{
+        name,bio,avatar,username
+      }
+    });
+  
+    res.json({ user:updatedUser });
   } catch (error) {
     res.status(500).json({ message: "Internal server error" });
   }

@@ -14,55 +14,60 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-
 model User {
-  id String @id @default(uuid())
-  name String
-  email String @unique
-  password String
-  avatar String?  
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  messages Message[]
+  id          String       @id @default(uuid())
+  name        String
+  email       String       @unique
+  password    String
+  avatar      String?
+  username    String?
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+  bio         String?
+  messages    Message[]
   chatMembers ChatMember[]
 }
 
-model Chat{
-  id String @id @default(uuid())
-  name String?
-  ownerId String?
-  isGroup Boolean @default(false)
+model Chat {
+  id        String   @id @default(uuid())
+  name      String?
+  ownerId   String?
+  isGroup   Boolean  @default(false)
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
   messages Message[]
-  members ChatMember[]
+  members  ChatMember[]
 }
 
-model ChatMember{
-  id String @id @default(uuid())
-  user User @relation(fields: [userId],references: [id])
-  userId String
-  chat Chat @relation(fields: [chatId],references: [id])
-  chatId String
-  role String @default("member")
-  joinedAt DateTime @default(now())
+model ChatMember {
+  id        String   @id @default(uuid())
+  user      User     @relation(fields: [userId], references: [id])
+  userId    String
+  chat      Chat     @relation(fields: [chatId], references: [id])
+  chatId    String
+  role      Role     @default(MEMBER)
+  joinedAt  DateTime @default(now())
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  @@unique([userId,chatId])
+  @@unique([userId, chatId])
 }
 
-model Message{
-  id String @id @default(uuid())
-  content String 
-  type String @default("text")
-  chat Chat @relation(fields: [chatId],references: [id])
-  chatId String
-  sender User @relation(fields: [senderId],references: [id])
-  senderId String
-  seenBy String[]
+enum Role {
+  ADMIN
+  MEMBER
+}
+
+model Message {
+  id        String   @id @default(uuid())
+  content   String
+  type      String   @default("text")
+  chat      Chat     @relation(fields: [chatId], references: [id])
+  chatId    String
+  sender    User     @relation(fields: [senderId], references: [id])
+  senderId  String
+  seenBy    String[]
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 

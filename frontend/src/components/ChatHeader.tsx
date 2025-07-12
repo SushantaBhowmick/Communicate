@@ -4,6 +4,12 @@ import { useParams } from "react-router-dom";
 import { User, MoreVertical, Phone, Video, Info, Users, ArrowLeft } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useNavigate } from "react-router-dom";
+import {
+  Dialog,
+  DialogContent,
+} from "@/components/ui/dialog";
+import GroupInfoPlan from "./GroupInfoPlan";
+import UserInfoPlan from "./UserInfoPlan";
 
 type User = { id: string; name: string; avatar?: string ,email:string};
 type Chat = {
@@ -19,8 +25,10 @@ export const ChatHeader = () => {
   const [chat, setChat] = useState<Chat | null>(null);
   const [otherUser, setOtherUser] = useState<User | null>(null);
   const [showMenu, setShowMenu] = useState(false);
+  const [showInfoDialog, setShowInfoDialog] = useState(false);
   const navigate = useNavigate();
   const currentUser= JSON.parse(localStorage.getItem("user") || "{}");
+  
 
   useEffect(() => {
     if (!chatId) return;
@@ -53,7 +61,7 @@ export const ChatHeader = () => {
 
   return (
     <div className="flex items-center justify-between px-4 py-3 bg-white border-b border-gray-200 shadow-sm">
-      <div className="flex items-center gap-3">
+      <div className="flex items-center gap-3 cursor-pointer"  onClick={() => setShowInfoDialog(true)}>
         {/* Back Button for Mobile */}
         <Button
           variant="ghost"
@@ -124,6 +132,7 @@ export const ChatHeader = () => {
           variant="ghost"
           size="sm"
           className="hover:bg-gray-100 text-gray-600"
+          onClick={() => setShowInfoDialog(true)}
         >
           <Info className="h-4 w-4" />
         </Button>
@@ -171,6 +180,17 @@ export const ChatHeader = () => {
           )}
         </div>
       </div>
+
+      {/* Info Dialog */}
+      <Dialog open={showInfoDialog} onOpenChange={setShowInfoDialog}>
+        <DialogContent className="p-0 max-w-md">
+          {chat?.isGroup ? (
+            <GroupInfoPlan onClose={() => setShowInfoDialog(false)} />
+          ) : (
+            <UserInfoPlan onClose={() => setShowInfoDialog(false)} />
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
