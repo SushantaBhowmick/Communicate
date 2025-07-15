@@ -1,5 +1,7 @@
 import { Request, Response } from "express";
 import prisma from "../config/prisma";
+import { getSocketServer } from "../sockets";
+import { getUnreadMessageCount, markChatAsRead } from "../services/chatService";
 
 export const createChat = async (req: Request, res: Response) => {
   const userId = (req as any).user.id;
@@ -32,13 +34,39 @@ export const getuserChats = async (req: Request, res: Response) => {
       },
       include: {
         members: {
-          include: { user: { select: { id: true, name: true } } },
+          include: { user: { select: { id: true, name: true, avatar: true } } },
         },
+        messages: {
+          orderBy: { createdAt: 'desc' },
+          take: 1,
+          select: {
+            id: true,
+            content: true,
+            createdAt: true,
+            sender: { select: { id: true, name: true } }
+          }
+        }
       },
+      orderBy: {
+        updatedAt: 'desc'
+      }
     });
-    res.status(200).json({ chats });
+
+    // Add latestMessage field and unread count for easier frontend access
+    const chatsWithExtras = await Promise.all(
+      chats.map(async (chat) => {
+        const unreadCount = await getUnreadMessageCount(userId, chat.id);
+        return {
+          ...chat,
+          latestMessage: chat.messages[0] || null,
+          unreadCount,
+        };
+      })
+    );
+
+    res.status(200).json({ chats: chatsWithExtras });
   } catch (error) {
-    res.status(500).json({ message: "Failed to create chat", error });
+    res.status(500).json({ message: "Failed to get chats", error });
   }
 };
 
@@ -113,9 +141,29 @@ export const startDirectChart = async (req: Request, res: Response) => {
       },
     },
     include:{
-        members:true,
+        members:{
+          include:{
+            user: { select: { id: true, name: true, avatar: true } }
+          }
+        },
     }
   });
+
+  // Emit chat creation to both users via their personal rooms
+  const io = getSocketServer();
+  if (io) {
+    [currentUserId, targetUserId].forEach((userId) => {
+      io.to(`user:${userId}`).emit('chat:created', {
+        chat: {
+          id: chat.id,
+          name: chat.name,
+          isGroup: chat.isGroup,
+          members: chat.members,
+          createdAt: chat.createdAt
+        }
+      });
+    });
+  }
 
   res.status(201).json({ chat });
 }
@@ -169,9 +217,29 @@ export const createGroupChat = async (req: Request, res: Response) => {
       }
     },
     include:{
-      members:true,
+      members:{
+        include:{
+          user: { select: { id: true, name: true, avatar: true } }
+        }
+      },
     }
   })
+
+  // Emit chat creation to all members via their personal rooms
+  const io = getSocketServer();
+  if (io) {
+    allUserIds.forEach((userId) => {
+      io.to(`user:${userId}`).emit('chat:created', {
+        chat: {
+          id: chat.id,
+          name: chat.name,
+          isGroup: chat.isGroup,
+          members: chat.members,
+          createdAt: chat.createdAt
+        }
+      });
+    });
+  }
 
   res.status(201).json({chat})
     
@@ -209,5 +277,41 @@ export const getGroupcInfo=async(req:Request,res:Response)=>{
     res.status(500).json({message:"Failed to get group info",error})
   }
 }
+
+export const markChatAsReadController = async (req: Request, res: Response) => {
+  try {
+    const { chatId } = req.params;
+    const userId = (req as any).user.id;
+
+    // Verify user is a member of the chat
+    const isMember = await prisma.chatMember.findFirst({
+      where: {
+        userId,
+        chatId,
+      },
+    });
+
+    if (!isMember) {
+      return res.status(403).json({ message: "Not a member of this chat" });
+    }
+
+    // Mark chat as read
+    await markChatAsRead(userId, chatId);
+
+    // Emit socket event to update unread count in real-time
+    const io = getSocketServer();
+    if (io) {
+      io.to(`user:${userId}`).emit('chat:read', {
+        chatId,
+        unreadCount: 0,
+      });
+    }
+
+    res.status(200).json({ message: "Chat marked as read" });
+  } catch (error) {
+    console.error('Error marking chat as read:', error);
+    res.status(500).json({ message: "Failed to mark chat as read", error });
+  }
+};
 
 

@@ -24,8 +24,11 @@ model User {
   createdAt   DateTime     @default(now())
   updatedAt   DateTime     @updatedAt
   bio         String?
+  lastSeen    DateTime     @default(now())
+  isOnline    Boolean      @default(false)
   messages    Message[]
   chatMembers ChatMember[]
+  chatReadStatus ChatReadStatus[]
 }
 
 model Chat {
@@ -38,6 +41,7 @@ model Chat {
 
   messages Message[]
   members  ChatMember[]
+  readStatus ChatReadStatus[]
 }
 
 model ChatMember {
@@ -50,6 +54,19 @@ model ChatMember {
   joinedAt  DateTime @default(now())
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+
+  @@unique([userId, chatId])
+}
+
+model ChatReadStatus {
+  id          String   @id @default(uuid())
+  user        User     @relation(fields: [userId], references: [id])
+  userId      String
+  chat        Chat     @relation(fields: [chatId], references: [id])
+  chatId      String
+  lastReadAt  DateTime @default(now())
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
 
   @@unique([userId, chatId])
 }

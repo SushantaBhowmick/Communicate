@@ -72,6 +72,36 @@ export const registerMessageSocket = (io:Server,socket:Socket)=>{
             }
            })
 
+           // Update chat's updatedAt timestamp
+           await prisma.chat.update({
+            where: { id: chatId },
+            data: { updatedAt: new Date() }
+           });
+
+           // Get all chat members to notify them of the update
+           const chat = await prisma.chat.findUnique({
+            where: { id: chatId },
+            include: {
+                members: { select: { userId: true } }
+            }
+           });
+
+           if (chat) {
+            // Notify all chat members via their personal rooms about chat update
+            chat.members.forEach((member) => {
+                io.to(`user:${member.userId}`).emit('chat:updated', {
+                    chatId,
+                    latestMessage: {
+                        id: message.id,
+                        content: message.content,
+                        createdAt: message.createdAt,
+                        sender: message.sender
+                    },
+                    updatedAt: new Date()
+                });
+            });
+           }
+
             // Broadcast to all users in the room
            io.to(chatId).emit('message:receive',message);
         } catch (error) {

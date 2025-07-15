@@ -3,7 +3,7 @@ import { Server } from "socket.io";
 import app from "./app";
 import dotenv from "dotenv";
 import { verifyToken } from "./utils/jwt";
-import { registerSocketHandlers } from "./sockets";
+import { registerSocketHandlers, setSocketServer } from "./sockets";
 
 dotenv.config();
 const PORT = process.env.PORT || 5000;
@@ -14,6 +14,9 @@ const io = new Server(httpServer, {
     origin: "*",
   },
 });
+
+// Set socket server instance for use in controllers
+setSocketServer(io);
 
 io.use((socket,next)=>{
     const token = socket.handshake.auth.token;

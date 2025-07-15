@@ -70,15 +70,23 @@ export const ChatPage = () => {
     }
   }, [messages, user]);
 
-  // Load initial history
+  // Load initial history and mark chat as read
   useEffect(() => {
     if (!chatId) return;
 
+    // Load messages
     api
       .get(`/messages/${chatId}?page=1&limit=20`)
       .then((res) => setMessages(res.data.messages.reverse()))
       .catch((err) => {
         console.error("Failed to load messages:", err);
+      });
+
+    // Mark chat as read when opened
+    api
+      .post(`/chats/${chatId}/read`)
+      .catch((err) => {
+        console.error("Failed to mark chat as read:", err);
       });
   }, [chatId]);
 

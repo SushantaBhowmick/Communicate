@@ -4,6 +4,7 @@ import { useParams } from "react-router-dom";
 import { User, MoreVertical, Phone, Video, Info, Users, ArrowLeft } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useNavigate } from "react-router-dom";
+import { useSocket } from "@/hooks/useSocket";
 import {
   Dialog,
   DialogContent,
@@ -11,7 +12,7 @@ import {
 import GroupInfoPlan from "./GroupInfoPlan";
 import UserInfoPlan from "./UserInfoPlan";
 
-type User = { id: string; name: string; avatar?: string ,email:string};
+type User = { id: string; name: string; avatar?: string; email: string; isOnline?: boolean; lastSeen?: string };
 type Chat = {
   id: string;
   name: string | null;
@@ -26,7 +27,9 @@ export const ChatHeader = () => {
   const [otherUser, setOtherUser] = useState<User | null>(null);
   const [showMenu, setShowMenu] = useState(false);
   const [showInfoDialog, setShowInfoDialog] = useState(false);
+  const [userPresence, setUserPresence] = useState<{ [userId: string]: { isOnline: boolean; lastSeen: string } }>({});
   const navigate = useNavigate();
+  const socket = useSocket();
   const currentUser= JSON.parse(localStorage.getItem("user") || "{}");
   
 
@@ -43,9 +46,31 @@ export const ChatHeader = () => {
     });
   }, [chatId]);
 
+  // Socket listener for presence updates
+  useEffect(() => {
+    if (!socket) return;
+
+    const handlePresenceUpdate = (data: { userId: string; isOnline: boolean; lastSeen: string }) => {
+      setUserPresence((prev) => ({
+        ...prev,
+        [data.userId]: {
+          isOnline: data.isOnline,
+          lastSeen: data.lastSeen,
+        },
+      }));
+    };
+
+    socket.on('user:presence', handlePresenceUpdate);
+
+    return () => {
+      socket.off('user:presence', handlePresenceUpdate);
+    };
+  }, [socket]);
+
   const title = chat?.isGroup ? chat.name : otherUser?.name;
   const avatar = otherUser?.avatar || "/default-avatar.png";
-  const isOnline = true; // 🔁 We'll hook this with presence/socket later
+  const isOnline = otherUser ? (userPresence[otherUser.id]?.isOnline || otherUser.isOnline || false) : false;
+  const lastSeen = otherUser ? (userPresence[otherUser.id]?.lastSeen || otherUser.lastSeen) : null;
 
   const getInitials = (name: string) => {
     return name
@@ -53,6 +78,23 @@ export const ChatHeader = () => {
       .map((n) => n[0])
       .join("")
       .toUpperCase();
+  };
+
+  const formatLastSeen = (lastSeenDate: string) => {
+    const now = new Date();
+    const lastSeen = new Date(lastSeenDate);
+    const diffInMinutes = Math.floor((now.getTime() - lastSeen.getTime()) / (1000 * 60));
+
+    if (diffInMinutes < 1) return "just now";
+    if (diffInMinutes < 60) return `${diffInMinutes}m ago`;
+    
+    const diffInHours = Math.floor(diffInMinutes / 60);
+    if (diffInHours < 24) return `${diffInHours}h ago`;
+    
+    const diffInDays = Math.floor(diffInHours / 24);
+    if (diffInDays < 7) return `${diffInDays}d ago`;
+    
+    return lastSeen.toLocaleDateString();
   };
 
   const handleBackClick = () => {
@@ -106,7 +148,7 @@ export const ChatHeader = () => {
             </p>
           ) : (
             <p className={`text-sm ${isOnline ? "text-green-600" : "text-gray-500"}`}>
-              {isOnline ? "Online" : "Last seen recently"}
+              {isOnline ? "Online" : (lastSeen ? `Last seen ${formatLastSeen(lastSeen)}` : "Last seen recently")}
             </p>
           )}
         </div>

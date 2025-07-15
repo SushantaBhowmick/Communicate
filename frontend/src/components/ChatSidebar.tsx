@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import api from "@/services/axios";
 import { StartChatForm } from "./SearchChatForm";
 import { useAuth } from "@/hooks/useAuth";
+import { useSocket } from "@/hooks/useSocket";
 import { User, LogOut, MessageCircle, Users, Settings, Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -12,8 +13,16 @@ type Chat = {
   id: string;
   name: string | null;
   isGroup: boolean;
-  members: { user: { id: string; name: string } }[];
-  messages?: { content: string; createdAt: string }[];
+  members: { user: { id: string; name: string; avatar?: string } }[];
+  latestMessage?: {
+    id: string;
+    content: string;
+    createdAt: string;
+    sender: { id: string; name: string };
+  } | null;
+  createdAt: string;
+  updatedAt: string;
+  unreadCount?: number;
 };
 
 export const ChatSidebar = () => {
@@ -21,12 +30,91 @@ export const ChatSidebar = () => {
   const [isCreateGroupModalOpen, setIsCreateGroupModalOpen] = useState(false);
   const navigate = useNavigate();
   const { user, logout } = useAuth();
+  const socket = useSocket();
 
+  // Load initial chats
   useEffect(() => {
     api.get("/chats").then((res) => {
       setChats(res.data.chats);
     });
   }, []);
+
+  // Socket listeners for real-time chat updates
+  useEffect(() => {
+    if (!socket) return;
+
+    const handleNewChat = (data: { chat: Chat }) => {
+      setChats((prevChats) => {
+        // Check if chat already exists
+        const exists = prevChats.some((chat) => chat.id === data.chat.id);
+        if (exists) return prevChats;
+        
+        // Add new chat to the beginning of the list
+        return [data.chat, ...prevChats];
+      });
+    };
+
+    const handleChatUpdate = (data: { 
+      chatId: string; 
+      latestMessage: {
+        id: string;
+        content: string;
+        createdAt: string;
+        sender: { id: string; name: string };
+      }; 
+      updatedAt: string 
+    }) => {
+      setChats((prevChats) => {
+        return prevChats
+          .map((chat) => {
+            if (chat.id === data.chatId) {
+              // Increment unread count if message is not from current user
+              const newUnreadCount = data.latestMessage.sender.id !== user?.id 
+                ? (chat.unreadCount || 0) + 1 
+                : chat.unreadCount || 0;
+              
+              return {
+                ...chat,
+                latestMessage: data.latestMessage,
+                updatedAt: data.updatedAt,
+                unreadCount: newUnreadCount,
+              };
+            }
+            return chat;
+          })
+          .sort((a, b) => {
+            // Sort by latest activity (updatedAt or latestMessage timestamp)
+            const timeA = a.latestMessage?.createdAt || a.updatedAt;
+            const timeB = b.latestMessage?.createdAt || b.updatedAt;
+            return new Date(timeB).getTime() - new Date(timeA).getTime();
+          });
+      });
+    };
+
+    const handleChatRead = (data: { chatId: string; unreadCount: number }) => {
+      setChats((prevChats) => {
+        return prevChats.map((chat) => {
+          if (chat.id === data.chatId) {
+            return {
+              ...chat,
+              unreadCount: data.unreadCount,
+            };
+          }
+          return chat;
+        });
+      });
+    };
+
+    socket.on('chat:created', handleNewChat);
+    socket.on('chat:updated', handleChatUpdate);
+    socket.on('chat:read', handleChatRead);
+
+    return () => {
+      socket.off('chat:created', handleNewChat);
+      socket.off('chat:updated', handleChatUpdate);
+      socket.off('chat:read', handleChatRead);
+    };
+  }, [socket]);
 
   const handleSelect = (chatId: string) => {
     navigate(`/chat/${chatId}`);
@@ -124,18 +212,43 @@ export const ChatSidebar = () => {
                           <h3 className="font-medium text-gray-900 truncate">
                             {title}
                           </h3>
-                          <span className="text-xs text-gray-500">
-                            {chat.isGroup && (
-                              <Users className="h-3 w-3 inline mr-1" />
+                                                    <div className="flex items-center gap-2">
+                            <span className="text-xs text-gray-500">
+                              {chat.latestMessage 
+                                ? new Date(chat.latestMessage.createdAt).toLocaleTimeString([], {
+                                    hour: '2-digit',
+                                    minute: '2-digit'
+                                  })
+                                : chat.isGroup && (
+                                  <>
+                                    <Users className="h-3 w-3 inline mr-1" />
+                                    {`${chat.members.length} members`}
+                                  </>
+                                )
+                              }
+                            </span>
+                            {chat.unreadCount && chat.unreadCount > 0 && (
+                              <div className="bg-green-500 text-white text-xs rounded-full min-w-[18px] h-[18px] flex items-center justify-center px-1 font-medium">
+                                {chat.unreadCount > 99 ? '99+' : chat.unreadCount}
+                              </div>
                             )}
-                            {chat.isGroup ? `${chat.members.length} members` : ""}
-                          </span>
+                          </div>
                         </div>
                         <p className="text-sm text-gray-600 truncate">
-                          {chat.isGroup 
-                            ? `Group chat with ${chat.members.length} members`
-                            : "Direct conversation"
-                          }
+                          {chat.latestMessage ? (
+                            <span>
+                              <span className="font-medium">
+                                {chat.latestMessage.sender.id === user?.id 
+                                  ? "You" 
+                                  : chat.latestMessage.sender.name}:
+                              </span>{" "}
+                              {chat.latestMessage.content}
+                            </span>
+                          ) : (
+                            chat.isGroup 
+                              ? `Group chat with ${chat.members.length} members`
+                              : "Start the conversation"
+                          )}
                         </p>
                       </div>
                     </div>
