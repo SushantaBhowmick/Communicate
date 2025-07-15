@@ -1,9 +1,9 @@
 import { useAuth } from '@/hooks/useAuth';
 import api from '@/services/axios';
-import React, { useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import { Button } from './ui/button';
-import { X, Mail, Calendar, Phone } from 'lucide-react';
+import { Mail, Calendar, Phone } from 'lucide-react';
 
 interface User {
   id: string;
@@ -22,6 +22,8 @@ interface ChatMember {
 }
 
 const UserInfoPlan = ({ onClose }: { onClose: () => void }) => {
+  // Suppress unused parameter warning - keeping for future use  
+  void onClose;
   const { chatId } = useParams<{ chatId: string }>();
   const { user } = useAuth();
   const [otherUser, setOtherUser] = useState<User | null>(null);

@@ -1,6 +1,6 @@
 import { useAuth } from '@/hooks/useAuth';
 import api from '@/services/axios';
-import React, { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { useParams } from 'react-router-dom';
 import { Button } from './ui/button';
 import { Users, Settings, Crown, UserPlus, Trash2, Search, Loader2, Edit3, Save, X as CloseIcon, AlertCircle, CheckCircle } from 'lucide-react';
@@ -20,6 +20,8 @@ interface ChatMember {
 }
 
 const GroupInfoPlan = ({onClose}:{onClose:()=>void}) => {
+  // Suppress unused parameter warning - keeping for future use
+  void onClose;
 
     const {chatId}= useParams<{chatId:string}>();
 
