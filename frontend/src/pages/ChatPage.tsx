@@ -33,6 +33,8 @@ export const ChatPage = () => {
     if (!chatId) return;
 
     socket.emit("room:join", chatId);
+    // Tell server we're viewing this chat (for notification suppression)
+    socket.emit("chat:viewing", { chatId });
 
     socket.on("message:receive", (msg) => {
       setMessages((prev) => [...prev, msg]);
@@ -55,6 +57,8 @@ export const ChatPage = () => {
 
     return () => {
       socket.emit("room:leave", chatId);
+      // Tell server we're no longer viewing any chat
+      socket.emit("chat:not-viewing");
       socket.off("message:receive");
       socket.off("typing:started");
       socket.off("typing:stopped");
@@ -89,6 +93,14 @@ export const ChatPage = () => {
         console.error("Failed to mark chat as read:", err);
       });
   }, [chatId]);
+
+  // Handle chat view tracking when navigating between chats
+  useEffect(() => {
+    return () => {
+      // When component unmounts or chatId changes, stop viewing
+      socket.emit("chat:not-viewing");
+    };
+  }, [chatId, socket]);
 
   // Auto-scroll to bottom
   useEffect(() => {

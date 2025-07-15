@@ -75,3 +75,21 @@ export const updateProfile= async(req:Request,res:Response)=>{
     res.status(500).json({ message: "Internal server error" });
   }
 }
+
+
+export const updateFCMToken = async(req:Request,res:Response)=>{
+ 
+  try {
+    const userId = (req as any).user.id;
+    const {token} = req.body;
+
+    await prisma.user.update({
+      where:{id:userId},
+      data:{fcmToken:token}
+    })
+
+    res.json({message:"FCM token updated successfully"});
+  } catch (error) {
+    res.status(500).json({ message: "Internal server error" });
+  }
+}

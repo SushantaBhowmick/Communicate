@@ -1,6 +1,8 @@
 import { Server, Socket } from "socket.io";
 import prisma from "../config/prisma";
 import { isUserInChat } from "../services/chatService";
+import { getUsersViewingChat } from "./index";
+import { sendNotification } from "../services/notification";
 
 
 export const registerMessageSocket = (io:Server,socket:Socket)=>{
@@ -87,6 +89,9 @@ export const registerMessageSocket = (io:Server,socket:Socket)=>{
            });
 
            if (chat) {
+            // Get users currently viewing this chat
+            const usersViewingChat = getUsersViewingChat(chatId);
+            
             // Notify all chat members via their personal rooms about chat update
             chat.members.forEach((member) => {
                 io.to(`user:${member.userId}`).emit('chat:updated', {
@@ -100,6 +105,53 @@ export const registerMessageSocket = (io:Server,socket:Socket)=>{
                     updatedAt: new Date()
                 });
             });
+
+            // Send push notifications to users who are NOT viewing the chat
+            const eligibleForNotification = chat.members.filter(member => 
+                member.userId !== userId && // Don't notify the sender
+                !usersViewingChat.includes(member.userId) // Don't notify users viewing the chat
+            );
+
+            // Get users with FCM tokens and send notifications
+            if (eligibleForNotification.length > 0) {
+                const userIds = eligibleForNotification.map(member => member.userId);
+                
+                // Fetch users with FCM tokens
+                prisma.user.findMany({
+                    where: {
+                        id: { in: userIds },
+                        fcmToken: { not: null }
+                    },
+                    select: {
+                        id: true,
+                        name: true,
+                        fcmToken: true
+                    }
+                }).then(usersWithTokens => {
+                                         // Send notification to each user
+                     usersWithTokens.forEach(async (user) => {
+                         if (user.fcmToken) {
+                             try {
+                                 await sendNotification(
+                                     user.fcmToken,
+                                     message.content,
+                                     `${message.sender.name}`,
+                                     {
+                                         chatId,
+                                         senderId: userId,
+                                         senderName: message.sender.name
+                                     }
+                                 );
+                                 console.log(`📱 Push notification sent to ${user.name}`);
+                             } catch (error) {
+                                 console.error(`Failed to send notification to ${user.name}:`, error);
+                             }
+                         }
+                     });
+                }).catch(error => {
+                    console.error('Error fetching users for notifications:', error);
+                });
+            }
            }
 
             // Broadcast to all users in the room

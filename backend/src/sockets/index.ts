@@ -8,11 +8,32 @@ import prisma from '../config/prisma';
 // Export io instance for use in controllers
 let socketServer: Server;
 
+// Track which users are viewing which chats
+const userChatViews = new Map<string, string>(); // userId -> chatId
+
 export const setSocketServer = (io: Server) => {
     socketServer = io;
 };
 
 export const getSocketServer = () => socketServer;
+
+export const getUsersViewingChat = (chatId: string): string[] => {
+    const usersViewing: string[] = [];
+    for (const [userId, viewingChatId] of userChatViews.entries()) {
+        if (viewingChatId === chatId) {
+            usersViewing.push(userId);
+        }
+    }
+    return usersViewing;
+};
+
+export const setUserChatView = (userId: string, chatId: string | null) => {
+    if (chatId) {
+        userChatViews.set(userId, chatId);
+    } else {
+        userChatViews.delete(userId);
+    }
+};
 
 // Helper function to update user presence
 const updateUserPresence = async (userId: string, isOnline: boolean) => {
@@ -77,8 +98,21 @@ export const registerSocketHandlers =(io:Server,socket:Socket)=>{
 
     registerMessageSocket(io,socket)
 
+    // Handle chat view tracking
+    socket.on('chat:viewing', (data: { chatId: string }) => {
+        setUserChatView(userId, data.chatId);
+        console.log(`👁️ User ${userId} is now viewing chat ${data.chatId}`);
+    });
+
+    socket.on('chat:not-viewing', () => {
+        setUserChatView(userId, null);
+        console.log(`👁️ User ${userId} stopped viewing chat`);
+    });
+
     socket.on('disconnect',()=>{
         console.log(`🔗 Socket disconnected:  ${userId}`);
+        // Clean up chat view tracking
+        setUserChatView(userId, null);
         // Update user to offline status
         updateUserPresence(userId, false);
     })
