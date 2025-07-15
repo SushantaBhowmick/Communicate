@@ -162,7 +162,10 @@ export const createGroupChat = async (req: Request, res: Response) => {
       name,
       isGroup:true,
       members:{
-        create:allUserIds.map((id)=>({userId:id}))
+        create:allUserIds.map((id)=>({
+          userId:id,
+          role: id === currentUserId ? "ADMIN" : "MEMBER"
+        }))
       }
     },
     include:{
