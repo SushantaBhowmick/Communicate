@@ -7,14 +7,20 @@ import { ChatPage } from "./pages/ChatPage";
 import { ChatLayout } from "./layouts/ChatLayouts";
 import { WelcomePanel } from "./components/WelcomePanel";
 import { ProfilePage } from "./pages/ProfilePage";
+import { PWAInstallPrompt } from "./components/PWAInstallPrompt";
+import { OfflineStatus } from "./components/OfflineStatus";
 import { useEffect } from "react";
 import { setupForegroundNotification } from "./utils/push";
+import { initializePWA } from "./utils/pwa";
+import { initializeOfflineQueue } from "./utils/offlineQueue";
 import { Toaster } from "sonner";
 
 function App() {
 
   useEffect(()=>{
     setupForegroundNotification();
+    initializePWA();
+    initializeOfflineQueue();
   },[])
 
   return (
@@ -29,6 +35,11 @@ function App() {
           },
         }}
       />
+      
+      {/* PWA Components */}
+      <PWAInstallPrompt />
+      <OfflineStatus />
+      
       <Routes>
         <Route path="/login" element={<LoginPage />} />
         <Route path="/register" element={<RegisterPage />} />
