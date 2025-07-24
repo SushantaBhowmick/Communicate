@@ -43,6 +43,7 @@ export const searchUsers= async(req:Request,res:Response)=>{
         name:true,
         email:true,
         avatar:true,
+        fcmToken:true,
       },
       take:10,
     });

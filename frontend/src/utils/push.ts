@@ -5,15 +5,21 @@ import { toast } from "sonner";
 
 export const requestNotificationPermission = async () => {
     const permission = await Notification.requestPermission();
-    if(permission === "granted") {
+console.log("called")
+
+    try {
+        if(permission === "granted") {
         const messaging = getMessaging(firebaseApp)
         const token = await getToken(messaging,{
             vapidKey: import.meta.env.VITE_FIREBASE_VAPID_KEY,
         });
-
+console.log("token",token)
         if(token){
             await api.put("/users/push-token",{token})
         }
+    }
+    } catch (error) {
+      console.log(error)  
     }
 }
 
