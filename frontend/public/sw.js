@@ -7,7 +7,7 @@ importScripts("https://www.gstatic.com/firebasejs/9.6.1/firebase-messaging-compa
 const manifest = self.__WB_MANIFEST;
 console.log('[SW] Workbox manifest:', manifest);
 
-// Firebase configuration
+// Firebase configuration - will be replaced during build
 firebase.initializeApp({
   apiKey: "AIzaSyAiKj1W0dBZk-b-KSmT7t7vP0l7W1FTF_Y",
   authDomain: "communicate-ee5b4.firebaseapp.com",
