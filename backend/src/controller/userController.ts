@@ -16,6 +16,14 @@ export const findUserByEmail = async (req: Request, res: Response) => {
   res.json({ user });
 };
 
+export const getAllUsersrs = async(req:Request,res:Response)=>{
+  try {
+    const users = await prisma.user.findMany();
+    res.json({ users });
+  } catch (error) {
+    res.status(500).json({ message: "Internal server error" });
+  }
+}
 
 
 

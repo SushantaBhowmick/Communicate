@@ -5,21 +5,33 @@ import { toast } from "sonner";
 
 export const requestNotificationPermission = async () => {
     const permission = await Notification.requestPermission();
-console.log("called")
+    console.log("Notification permission:", permission);
 
     try {
         if(permission === "granted") {
-        const messaging = getMessaging(firebaseApp)
-        const token = await getToken(messaging,{
-            vapidKey: import.meta.env.VITE_FIREBASE_VAPID_KEY,
-        });
-console.log("token",token)
-        if(token){
-            await api.put("/users/push-token",{token})
+            // Wait for service worker to be ready
+            if ('serviceWorker' in navigator) {
+                const registration = await navigator.serviceWorker.ready;
+                console.log("Service worker ready:", registration);
+                
+                const messaging = getMessaging(firebaseApp);
+                const token = await getToken(messaging, {
+                    vapidKey: import.meta.env.VITE_FIREBASE_VAPID_KEY,
+                    serviceWorkerRegistration: registration
+                });
+                
+                console.log("FCM token:", token);
+                
+                if(token){
+                    await api.put("/users/push-token", {token});
+                    console.log("FCM token saved to backend");
+                }
+            } else {
+                console.error("Service Worker not supported");
+            }
         }
-    }
     } catch (error) {
-      console.log(error)  
+        console.error("Error requesting notification permission:", error);
     }
 }
 

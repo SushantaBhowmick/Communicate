@@ -7,7 +7,7 @@ importScripts("https://www.gstatic.com/firebasejs/9.6.1/firebase-messaging-compa
 const manifest = self.__WB_MANIFEST;
 console.log('[SW] Workbox manifest:', manifest);
 
-// Firebase configuration - will be replaced during build
+// Firebase configuration - using the same config as main app
 firebase.initializeApp({
   apiKey: "AIzaSyAiKj1W0dBZk-b-KSmT7t7vP0l7W1FTF_Y",
   authDomain: "communicate-ee5b4.firebaseapp.com",
@@ -55,6 +55,7 @@ messaging.onBackgroundMessage((payload) => {
     tag: 'chat-message'
   };
 
+  console.log('[SW] Showing notification with options:', notificationOptions);
   return self.registration.showNotification(notificationTitle, notificationOptions);
 });
 
@@ -192,4 +193,14 @@ self.addEventListener('push', (event) => {
   }
 });
 
-console.log('[SW] Service worker loaded successfully'); 
+console.log('[SW] Service worker loaded successfully');
+console.log('[SW] Firebase messaging initialized');
+
+// Listen for messages from main thread
+self.addEventListener('message', (event) => {
+  console.log('[SW] Received message from main thread:', event.data);
+  
+  if (event.data && event.data.type === 'SKIP_WAITING') {
+    self.skipWaiting();
+  }
+}); 

@@ -155,4 +155,28 @@ export const getCacheSize = async (): Promise<number> => {
   }
   
   return total;
+};
+
+// Development helper to force update service worker
+export const forceUpdateServiceWorker = async (): Promise<void> => {
+  if ('serviceWorker' in navigator) {
+    console.log('🔄 Forcing service worker update...');
+    
+    const registrations = await navigator.serviceWorker.getRegistrations();
+    for (let registration of registrations) {
+      console.log('Unregistering service worker:', registration.scope);
+      await registration.unregister();
+    }
+    
+    // Clear all caches
+    await clearPWACache();
+    
+    console.log('✅ All service workers unregistered and caches cleared');
+    console.log('🔄 Please refresh the page to register new service worker');
+    
+    // Optional: Auto refresh after a short delay
+    setTimeout(() => {
+      window.location.reload();
+    }, 1000);
+  }
 }; 

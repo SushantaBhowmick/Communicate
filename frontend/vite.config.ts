@@ -17,7 +17,10 @@ export default defineConfig({
       injectRegister: 'auto',
       workbox: {
         globPatterns: ['**/*.{js,css,html,ico,png,svg,woff2}'],
-        globIgnores: ['**/firebase-messaging-sw.js']
+        globIgnores: ['**/firebase-messaging-sw.js'],
+        cleanupOutdatedCaches: true,
+        skipWaiting: true,
+        clientsClaim: true
       },
       manifest: {
         name: 'Chatrix - Real-time Chat Platform',
@@ -75,7 +78,8 @@ export default defineConfig({
       },
       devOptions: {
         enabled: true,
-        type: 'module'
+        type: 'classic',
+        suppressWarnings: true
       }
     })
   ],

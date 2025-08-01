@@ -18,9 +18,17 @@ import { Toaster } from "sonner";
 function App() {
 
   useEffect(()=>{
-    setupForegroundNotification();
-    initializePWA();
-    initializeOfflineQueue();
+    // Initialize PWA first, then set up notifications
+    const initializeApp = async () => {
+      initializePWA();
+      // Wait a bit for service worker to register
+      setTimeout(() => {
+        setupForegroundNotification();
+        initializeOfflineQueue();
+      }, 1000);
+    };
+    
+    initializeApp();
   },[])
 
   return (
