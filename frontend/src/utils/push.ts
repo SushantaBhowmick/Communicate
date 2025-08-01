@@ -8,6 +8,7 @@ export const requestNotificationPermission = async () => {
     console.log("Notification permission:", permission);
 
     try {
+        console.log("Permission:", permission);
         if(permission === "granted") {
             // Wait for service worker to be ready
             if ('serviceWorker' in navigator) {
@@ -36,23 +37,33 @@ export const requestNotificationPermission = async () => {
 }
 
 export const setupForegroundNotification = async()=>{
-    const messaging = getMessaging(firebaseApp);
-    onMessage(messaging,(payload)=>{
-        console.log("[Foreground Notification]",payload);
-        if(payload.notification?.title && payload.notification?.body){
-            toast(payload.notification.title, {
-                description: payload.notification.body,
-                action: {
-                    label: "View",
-                    onClick: () => {
-                        // Get chatId from payload data and navigate
-                        if (payload.data?.chatId) {
-                            window.location.href = `/chat/${payload.data.chatId}`;
-                        }
-                    }
-                },
-                duration: 5000,
-            });
+    try {
+        // Register service worker for Firebase messaging
+        if ('serviceWorker' in navigator) {
+            const registration = await navigator.serviceWorker.register('/firebase-messaging-sw.js');
+            console.log('Firebase SW registered:', registration);
         }
-    })
+
+        const messaging = getMessaging(firebaseApp);
+        onMessage(messaging,(payload)=>{
+            console.log("[Foreground Notification]",payload);
+            if(payload.notification?.title && payload.notification?.body){
+                toast(payload.notification.title, {
+                    description: payload.notification.body,
+                    action: {
+                        label: "View",
+                        onClick: () => {
+                            // Get chatId from payload data and navigate
+                            if (payload.data?.chatId) {
+                                window.location.href = `/chat/${payload.data.chatId}`;
+                            }
+                        }
+                    },
+                    duration: 5000,
+                });
+            }
+        })
+    } catch (error) {
+        console.error('Error setting up notifications:', error);
+    }
 }
