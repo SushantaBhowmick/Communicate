@@ -39,14 +39,14 @@ try {
 
    const user = await prisma.user.findUnique({where:{email}})
 
-   if(!user) return res.status(400).json({message: 'Invalid credentials'});
+   if(!user) return res.status(400).json({message: 'Invalid credentials ci/cd testing'});
 
    const token = generateToken(user.id);
 
    res.status(200).json({
     user:{id:user.id,name:user.name,email:user.email},
     token,
-    message: 'User logged in successfully'
+    message: 'User logged in successfully ci/cd testing'
    })
 
 
