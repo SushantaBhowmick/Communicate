@@ -26,6 +26,7 @@ app.use('/api-docs',swaggerui.serve,swaggerui.setup(swaggerSpec));
 app.get('/', (req, res) => {
     res.status(200).json({
         status: 'success',
+        project:"Communicate",
         message: 'Server is healthy and running'
     });
 });
