@@ -3,31 +3,30 @@ name: Deploy Backend to EC2
 on:
   push:
     branches:
-      - master   # or your deployment branch
+      - master   # or master, whichever branch you deploy
 
 jobs:
   deploy:
     runs-on: ubuntu-latest
 
     steps:
-      # 1️⃣ Checkout the code
       - name: Checkout Repository
         uses: actions/checkout@v3
 
-      # 2️⃣ Setup SSH Key for EC2
+      # ✅ Setup SSH key for GitHub Actions
       - name: Setup SSH Key
         run: |
-          echo "${{ secrets.EC2_KEY }}" > ec2_key.pem
+          echo "${{ secrets.EC2_SSH_KEY }}" > ec2_key.pem
           chmod 600 ec2_key.pem
 
-      # 3️⃣ Deploy to EC2
+      # ✅ Deploy to EC2 using SSH
       - name: Deploy via SSH
         run: |
-          ssh -o StrictHostKeyChecking=no -i ec2_key.pem ubuntu@${{ secrets.EC2_HOST }} << 'EOF'
+          ssh -o StrictHostKeyChecking=no -i ec2_key.pem ubuntu@15.207.112.124 << 'EOF'
             cd ~/Communicate/backend
-            git pull origin main
+            git pull origin master
             npm install
             npm run build
             pm2 restart backend || pm2 start dist/src/index.js --name backend
-            exit
+            sudo systemctl restart nginx
           EOF
